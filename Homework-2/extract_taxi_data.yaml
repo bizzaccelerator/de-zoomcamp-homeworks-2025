@@ -1,0 +1,29 @@
+id: taxi_extraction_test
+namespace: zoomcamp
+
+tasks:
+  - id: extract
+    type: io.kestra.plugin.scripts.shell.Commands
+    outputFiles:
+      - "taxi.csv"
+    taskRunner:
+      type: io.kestra.plugin.core.runner.Process
+    commands:
+      - wget -qO- https://github.com/DataTalksClub/nyc-tlc-data/releases/download/yellow/yellow_tripdata_2020-12.csv.gz | gunzip > "taxi.csv"
+  
+  - id: transform
+    warningOnStdErr: false
+    type: io.kestra.plugin.scripts.python.Commands
+    containerImage: ghcr.io/kestra-io/pydata:latest
+    namespaceFiles:
+      enabled: true
+      include:
+        - test.py
+    beforeCommands:
+          - pip install pandas
+    inputFiles: 
+      operable.csv: "{{ outputs.extract.outputFiles['taxi.csv']}}"
+    taskRunner:
+      type: io.kestra.plugin.core.runner.Process
+    commands:
+      - python test.py
